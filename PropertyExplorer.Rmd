@@ -1,0 +1,81 @@
+---
+title: "Property Explorer"
+author: "Alistair Grevis-James - s3644119"
+output: html_document
+runtime: shiny
+---
+
+```{r include=FALSE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(shiny)
+library(ggplot2)
+library(dplyr) # Data wrangling
+library(flexdashboard) # Dashboard package
+library(shinydashboard) # Dashboard package
+library(plotly) # Interactive data visualisations
+```
+
+```{r include=FALSE}
+ds <- ggplot2::txhousing
+str(ds)
+```
+
+```{r include=FALSE}
+ds$month <- factor(ds$month, levels = c(1:12),
+                          labels = c("January","February","March","April","May","June",
+                                     "July", "August", "September", "October", "November", "December"),
+                          ordered = TRUE) 
+ds$city <- factor(ds$city)
+ds$year <- factor(ds$year)
+```
+
+```{r include=FALSE}
+str(ds)
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+cities <- unique(ds$city)
+discrete_x <- colnames(ds)[2:3]
+continuous_y <- colnames(ds)[4:8]
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+ui <- fluidPage(
+	br(),
+	sidebarPanel(
+		selectInput(inputId = "citySelect",
+            label = "Select City",
+            choices = cities,
+            multiple = TRUE),
+	  selectInput('x', label = 'Independant Variable', choices = discrete_x),
+		selectInput('y', label = 'Dependant Variable', choices = continuous_y),
+		selectInput('colour', label = 'Colour', c('None', colnames(ds[1:3])))
+	),
+	
+	mainPanel(
+		plotOutput('trendPlot')
+	)
+)
+```  
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+server <- function(input, output) {
+  
+	output$trendPlot <- renderPlot({
+	  dsx <- ds[ds$city %in% input$citySelect,]
+		p <- ggplot(data = dsx, aes_string(x = input$x, y = input$y)) + geom_boxplot()
+
+		if (input$colour != 'None')
+				p <- p + aes_string(colour=input$colour)
+
+		p
+	})
+}
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+shinyApp(ui = ui, server = server, options=list(height = 600)) # Run the application
+```
